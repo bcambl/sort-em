@@ -1,0 +1,9 @@
+*.pyc
+*.log
+*.nja
+*.db
+notes
+setup.py
+test.py
+dbtest.py
+testfiles/
