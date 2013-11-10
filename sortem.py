@@ -28,14 +28,15 @@ The views and conclusions contained in the software and documentation are those
 of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 '''
-__appname__ = "Sort'em"
+__appname__ = "Sort-em"
 __license__ = "BSD"
 __author__ = "Blayne Campbell"
 __date__ = "October 31, 2013"
-__website__ = "http://blaynecampbell.com"
+__website__ = "http://blaynecampbell.com/sort-em/"
 '''
-Sort'em was created to sort and detect file duplicates based on MD5.
-This project was inspired by one of my collegues Mario.
+Sort-em was created to sort and detect file duplicates based on MD5.
+This project was inspired by one of my collegues (Mario).
+
 '''
 
 import sqlite3
@@ -119,7 +120,7 @@ At this point the script is extendable to process the duplicates as you wish.
 
 '''
 The following code simply creates a logfile stating all duplicate files
-found in the database file.
+found in the database.
 '''
 con = sqlite3.connect('data.db')
 cur = con.cursor()
