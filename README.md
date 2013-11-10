@@ -3,7 +3,7 @@
 ###Documentation
 Sort-em is a small Python program that utilizes a SQLite database to catalog all files in a given directory along with a checksum. Once the initial scan is complete and the database has been fully populated, all files are inspected for duplicates.
 
-Once the script has completed, each file record in the database will now be marked with a master or dupelicate flag.
+Once the script has completed, each file record in the database will now be marked with a master or duplicate flag.
 
 ###Latest Version
 Details of the latest version can be found on my blog project page under http://blaynecampbell.com/sort-em/
