@@ -97,7 +97,6 @@ def mvdup(db):
             dest = str(outdir + d[3])
             if not os.path.exists(dest):
                 os.makedirs(dest)
-            print "shutil.move(" + f + ", " + dest + ")"
             shutil.move(f, dest)
     con.close()
 
@@ -156,7 +155,6 @@ else:
     print "Duplicate Files Found (see duplicates.log):"
 f = open('duplicates.log', 'wb')
 for dupe in data:
-    print dupe[3] + '/' + dupe[1]
     '''Newline for UNIX systems \n OR Windows systems \r\n'''
     f.write(dupe[3] + '/' + dupe[1] + '\n')
 f.close()
