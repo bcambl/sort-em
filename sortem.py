@@ -28,11 +28,11 @@ The views and conclusions contained in the software and documentation are those
 of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 '''
-__appname__ = "Sort'em"
+__appname__ = "Sort-em"
 __license__ = "BSD"
 __author__ = "Blayne Campbell"
 __date__ = "October 31, 2013"
-__website__ = "http://blaynecampbell.com"
+__website__ = "http://blaynecampbell.com/sort-em"
 
 import sqlite3
 import hashlib
