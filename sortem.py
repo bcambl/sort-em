@@ -33,20 +33,19 @@ __license__ = "BSD"
 __author__ = "Blayne Campbell"
 __date__ = "October 31, 2013"
 __website__ = "http://blaynecampbell.com"
-'''
-Sort'em was created to sort and detect file duplicates based on MD5.
-This project was inspired by one of my collegues Mario.
-'''
 
 import sqlite3
 import hashlib
+import shutil
 import sys
 import os
+
+database = 'data.db'  # Set Database
 
 '''Setting Directory to Process'''
 print "Provide the ABSOLUTE PATH to process.."
 sdir = str(raw_input("Directory:"
-            "(Default: " + os.getcwd() + '/files' + "):"))
+            "(" + os.getcwd() + '/files' + "):"))
 if len(sdir) >= 1:
         if os.path.exists(sdir):
             print "Now processing: ", sdir
@@ -57,6 +56,22 @@ else:
     print "Processing default location: " + os.getcwd() + "/files"
     sdir = os.getcwd() + '/files'
 
+yes = set(['yes', 'y', 'ye'])
+no = set(['no', 'n', ''])
+proc = None
+while proc is None:
+    print ""
+    choice = raw_input("Move duplicates found to the 'duplicates' directory?"
+                    "(yes/NO)").lower()
+    if choice in yes:
+        print "You chose to MOVE files after analysis.."
+        proc = 1
+    elif choice in no:
+        print "You chose NOT to move files."
+        proc = 0
+    else:
+        sys.stdout.write("Please respond with 'yes' or 'no'")
+
 
 def md5sum(fin):
     '''Generate md5 checksum for current file'''
@@ -66,11 +81,31 @@ def md5sum(fin):
             md5.update(chunk)
     return md5.hexdigest()
 
+
+def mvdup(db):
+    outdir = os.getcwd() + '/duplicates'
+    con = sqlite3.connect(db)
+    cur = con.cursor()
+    cur.execute("""SELECT * FROM files WHERE dupe = 1""")
+    data = cur.fetchall()
+    if not data:
+        print "No files to move"
+    else:
+        print "Moving Duplicates.."
+        for d in data:
+            f = str(d[3] + '/' + d[1])
+            dest = str(outdir + d[3])
+            if not os.path.exists(dest):
+                os.makedirs(dest)
+            print "shutil.move(" + f + ", " + dest + ")"
+            shutil.move(f, dest)
+    con.close()
+
 count = 1
 con = None
 try:
     '''Initialize database and create table for file records'''
-    con = sqlite3.connect('data.db')
+    con = sqlite3.connect(database)
     cur = con.cursor()
     cur.execute("DROP TABLE IF EXISTS files")
     cur.execute("CREATE TABLE files(id INT, name TEXT,"
@@ -79,6 +114,7 @@ try:
         for name in files:
             '''Populate table with file records'''
             n, e = os.path.splitext(name)
+            e = e.lstrip('.')
             h = md5sum(os.path.join(path, name))
             cur.execute("""INSERT INTO files VALUES (
                 ?, ?, ?, ?, ?, 0, 0)""",
@@ -93,7 +129,7 @@ finally:
     if con:
         con.close()
 
-con = sqlite3.connect('data.db')
+con = sqlite3.connect(database)
 cur = con.cursor()
 cur.execute("""SELECT * FROM files""")
 data = cur.fetchone()
@@ -110,22 +146,13 @@ while data:
     cur.execute("""SELECT * FROM files WHERE id > ?""", (i,))
     data = cur.fetchone()
 
-if con:
-        con.close()
-'''
-At this point the script is extendable to process the duplicates as you wish.
-'''
-
-
-'''
-The following code simply creates a logfile stating all duplicate files
-found in the database file.
-'''
-con = sqlite3.connect('data.db')
-cur = con.cursor()
+'''Create Logfile'''
 cur.execute("""SELECT * FROM files WHERE dupe = 1""")
 data = cur.fetchall()
-print "Duplicate Files Found:"
+if not data:
+    print "No Duplicates found."
+else:
+    print "Duplicate Files Found (see duplicates.log):"
 f = open('duplicates.log', 'wb')
 for dupe in data:
     print dupe[3] + '/' + dupe[1]
@@ -133,4 +160,13 @@ for dupe in data:
     f.write(dupe[3] + '/' + dupe[1] + '\n')
 f.close()
 
-con.close()
+'''Moving duplicates'''
+if proc is 1:
+    mvdup(database)
+else:
+    pass
+
+print "DONE"
+
+if con:
+        con.close()
