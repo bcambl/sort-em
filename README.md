@@ -19,7 +19,7 @@ OR
 
 Press ENTER to accept the default path (current_directory/files)
 
-The program may take a long period of time to complete depending on the number & size of files being processed. 
+The program may take a long period of time to complete depending on the number & size of files being processed.
 
 Once the process has completed, you will have a data.db file containing all file information as well as what files were detected as duplicates via checksum.
 
