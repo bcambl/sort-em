@@ -32,7 +32,7 @@ __appname__ = "Sort-em"
 __license__ = "BSD"
 __author__ = "Blayne Campbell"
 __date__ = "October 31, 2013"
-__website__ = "http://blaynecampbell.com/sort-em"
+__website__ = "http://blaynecampbell.com/sort-em/"
 
 import sqlite3
 import hashlib
@@ -40,37 +40,49 @@ import shutil
 import sys
 import os
 
-database = 'data.db'  # Set Database
+'''Set Database Name'''
+database = 'data.db'  # Useful for multiple database needs
 
-'''Setting Directory to Process'''
-print "Provide the ABSOLUTE PATH to process.."
-sdir = str(raw_input("Directory:"
-            "(" + os.getcwd() + '/files' + "):"))
-if len(sdir) >= 1:
-        if os.path.exists(sdir):
-            print "Now processing: ", sdir
-        else:
-            print "Specified path does not exist!"
-            exit()
-else:
-    print "Processing default location: " + os.getcwd() + "/files"
-    sdir = os.getcwd() + '/files'
-
-yes = set(['yes', 'y', 'ye'])
-no = set(['no', 'n', ''])
+con = None
+sdir = None
 proc = None
-while proc is None:
-    print ""
-    choice = raw_input("Move duplicates found to the 'duplicates' directory?"
-                    "(yes/NO)").lower()
-    if choice in yes:
-        print "You chose to MOVE files after analysis.."
-        proc = 1
-    elif choice in no:
-        print "You chose NOT to move files."
-        proc = 0
+
+
+def setdir():
+    '''Setting Directory to Process'''
+    print "Provide the ABSOLUTE PATH to process.."
+    sdir = str(raw_input("Directory:"
+                         "(" + os.getcwd() + '/files' + "):"))
+    if len(sdir) >= 1:
+            if os.path.exists(sdir):
+                print "Now processing: ", sdir
+            else:
+                print "Specified path does not exist!"
+                exit()
     else:
-        sys.stdout.write("Please respond with 'yes' or 'no'")
+        print "Processing default location: " + os.getcwd() + "/files"
+        sdir = os.getcwd() + '/files'
+        return sdir
+
+
+def admvdup():
+    yes = set(['yes', 'y', 'ye'])
+    no = set(['no', 'n', ''])
+    proc = None
+    while proc is None:
+        print ""
+        choice = raw_input("Move duplicates to the 'duplicates' directory?"
+                           "(yes/NO)").lower()
+        if choice in yes:
+            print "You chose to MOVE files after analysis.."
+            proc = 1
+            return proc
+        elif choice in no:
+            print "You chose NOT to move files."
+            proc = 0
+            return proc
+        else:
+            sys.stdout.write("Please respond with 'yes' or 'no'")
 
 
 def md5sum(fin):
@@ -82,90 +94,123 @@ def md5sum(fin):
     return md5.hexdigest()
 
 
-def mvdup(db):
-    outdir = os.getcwd() + '/duplicates'
-    con = sqlite3.connect(db)
+def index():
+    count = 1
+    con = None
+    try:
+        '''Initialize database and create table for file records'''
+        con = sqlite3.connect(database)
+        cur = con.cursor()
+        cur.execute("DROP TABLE IF EXISTS files")
+        cur.execute("CREATE TABLE files(id INT, name TEXT,"
+                    "type INT, path TEXT, hash STR, master INT, dupe INT,"
+                    "moved INT)")
+        for path, subdirs, files in os.walk(sdir):
+            for name in files:
+                '''Populate table with file records'''
+                n, e = os.path.splitext(name)
+                e = e.lstrip('.')
+                h = md5sum(os.path.join(path, name))
+                cur.execute("""INSERT INTO files VALUES (
+                    ?, ?, ?, ?, ?, 0, 0, 0)""",
+                            (count, name, e, path, h))
+                count += 1
+                con.commit()
+    except sqlite3.Error, e:
+        print "Error %s:" % e.args[0]
+        sys.exit(1)
+
+    finally:
+        if con:
+            con.close()
+
+
+def iddup():
+    con = sqlite3.connect(database)
+    cur = con.cursor()
+    cur.execute("""SELECT * FROM files""")
+    data = cur.fetchone()
+    while data:
+        '''Mark master and duplicate files in database file'''
+        (i, n, t, p, h, m, d, v) = data
+        if d == 0 and m == 0:
+            cur.execute("""UPDATE files SET master = 1
+                WHERE id = ?""", (i,))
+            h = str(h)
+            cur.execute("""UPDATE files SET dupe = 1 WHERE
+                hash = ? AND id <> ? AND master <> 1""", (h, i,))
+        con.commit()
+        cur.execute("""SELECT * FROM files WHERE id > ?""", (i,))
+        data = cur.fetchone()
+
+
+def duplog():
+    '''Create Logfile'''
+    con = sqlite3.connect(database)
     cur = con.cursor()
     cur.execute("""SELECT * FROM files WHERE dupe = 1""")
     data = cur.fetchall()
     if not data:
-        print "No files to move"
+        print "No Duplicates found."
+    else:
+        print "Duplicate Files Found (see duplicates.log):"
+    f = open('duplicates.log', 'wb')
+    for dupe in data:
+        '''Newline for UNIX systems \n OR Windows systems \r\n'''
+        f.write(dupe[3] + '/' + dupe[1] + '\n')
+    f.close()
+
+
+def mvdup(db):
+    outdir = os.getcwd() + '/duplicates'
+    con = sqlite3.connect(db)
+    cur = con.cursor()
+    cur.execute("""SELECT * FROM files WHERE dupe = 1  AND moved <> 1""")
+    data = cur.fetchall()
+    if not data:
+        print "No files to move OR the files have already been moved previously"
     else:
         print "Moving Duplicates.."
         for d in data:
             f = str(d[3] + '/' + d[1])
+            i = d[0]
             dest = str(outdir + d[3])
             if not os.path.exists(dest):
                 os.makedirs(dest)
             shutil.move(f, dest)
+            cur.execute("""UPDATE files SET moved = 1 WHERE
+                id = ?""", (i,))
+            con.commit()
     con.close()
 
-count = 1
-con = None
+
+def move(p):
+    '''Moving duplicates'''
+    if p is 1:
+        mvdup(database)
+    else:
+        pass
+
+
 try:
-    '''Initialize database and create table for file records'''
-    con = sqlite3.connect(database)
-    cur = con.cursor()
-    cur.execute("DROP TABLE IF EXISTS files")
-    cur.execute("CREATE TABLE files(id INT, name TEXT,"
-                "type INT, path TEXT, hash STR, master INT, dupe INT)")
-    for path, subdirs, files in os.walk(sdir):
-        for name in files:
-            '''Populate table with file records'''
-            n, e = os.path.splitext(name)
-            e = e.lstrip('.')
-            h = md5sum(os.path.join(path, name))
-            cur.execute("""INSERT INTO files VALUES (
-                ?, ?, ?, ?, ?, 0, 0)""",
-                        (count, name, e, path, h))
-            count += 1
-            con.commit()
-except sqlite3.Error, e:
-    print "Error %s:" % e.args[0]
-    sys.exit(1)
+    with open(database):
+        print "found a database already named: ", database
+        move(admvdup())
+        iddup()
+        duplog()
+except IOError:
+    print 'No database found. Will create database named: ', database
+    sdir = setdir()
+    proc = admvdup()
+    print "sdir: ", sdir
+    print "proc: ", proc
+    index()
+    iddup()
+    duplog()
+    move(proc)
 
-finally:
-    if con:
-        con.close()
-
-con = sqlite3.connect(database)
-cur = con.cursor()
-cur.execute("""SELECT * FROM files""")
-data = cur.fetchone()
-while data:
-    '''Mark master and duplicate files in database file'''
-    (i, n, t, p, h, m, d) = data
-    if d == 0 and m == 0:
-        cur.execute("""UPDATE files SET master = 1
-            WHERE id = ?""", (i,))
-        h = str(h)
-        cur.execute("""UPDATE files SET dupe = 1 WHERE
-            hash = ? AND id <> ? AND master <> 1""", (h, i,))
-    con.commit()
-    cur.execute("""SELECT * FROM files WHERE id > ?""", (i,))
-    data = cur.fetchone()
-
-
-'''Create Logfile'''
-cur.execute("""SELECT * FROM files WHERE dupe = 1""")
-data = cur.fetchall()
-if not data:
-    print "No Duplicates found."
-else:
-    print "Duplicate Files Found (see duplicates.log):"
-f = open('duplicates.log', 'wb')
-for dupe in data:
-    '''Newline for UNIX systems \n OR Windows systems \r\n'''
-    f.write(dupe[3] + '/' + dupe[1] + '\n')
-f.close()
-
-'''Moving duplicates'''
-if proc is 1:
-    mvdup(database)
-else:
-    pass
 
 print "DONE"
 
 if con:
-        con.close()
+    con.close()

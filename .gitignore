@@ -2,6 +2,7 @@
 *.log
 *.nja
 *.db
+*.swp
 notes
 setup.py
 test.py
