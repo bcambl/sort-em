@@ -1,7 +1,7 @@
 #Sort-em#
 
 ###Documentation#
-Sort-em is a small Python program that utilizes a SQLite database to catalog all files in a given directory along with a checksum. Once the initial scan is complete and the database has been fully populated, all files are inspected for duplicates.
+Sort-em is a small Python program that utilizes a SQLite database to catalog all files in a given directory along with a SHA512 checksum. Once the initial scan is complete and the database has been fully populated, all files are inspected for duplicates.
 
 Once the script has completed, each file record in the database will now be marked with a master or duplicate flag.
 
@@ -33,7 +33,7 @@ __Specify if you would like the duplicate files to be moved to the 'duplicates' 
 ***
 The program may take a long period of time to complete depending on the number & size of files being processed.
 
-Once the process has completed, you will have a database file containing all file information as well as which files were detected as duplicates via checksum.
+Once the process has completed, you will have a database file containing all file information as well as which files were detected as duplicates via SHA512 checksum.
 
 ###Licensing
 Please see the file called LICENSE.

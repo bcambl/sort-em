@@ -33,6 +33,7 @@ __license__ = "BSD"
 __author__ = "Blayne Campbell"
 __date__ = "October 31, 2013"
 __website__ = "http://blaynecampbell.com/sort-em/"
+__status__ = "Development"
 
 import sqlite3
 import hashlib
@@ -43,6 +44,7 @@ import os
 '''Set Database Name'''
 database = 'data.db'  # Useful for multiple database needs
 
+'''No not edit'''
 con = None
 sdir = None
 proc = None
@@ -85,13 +87,13 @@ def admvdup():
             sys.stdout.write("Please respond with 'yes' or 'no'")
 
 
-def md5sum(fin):
-    '''Generate md5 checksum for current file'''
-    md5 = hashlib.md5()
+def chksum(fin):
+    '''Generate sha512 checksum for current file'''
+    sha = hashlib.sha512()
     with open(fin, 'rb') as f:
-        for chunk in iter(lambda: f.read(128 * md5.block_size), b''):
-            md5.update(chunk)
-    return md5.hexdigest()
+        for chunk in iter(lambda: f.read(128 * sha.block_size), b''):
+            sha.update(chunk)
+    return sha.hexdigest()
 
 
 def index():
@@ -110,7 +112,7 @@ def index():
                 '''Populate table with file records'''
                 n, e = os.path.splitext(name)
                 e = e.lstrip('.')
-                h = md5sum(os.path.join(path, name))
+                h = chksum(os.path.join(path, name))
                 cur.execute("""INSERT INTO files VALUES (
                     ?, ?, ?, ?, ?, 0, 0, 0)""",
                             (count, name, e, path, h))
