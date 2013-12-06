@@ -1,6 +1,6 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-'''
+"""
 Copyright (c) 2013, Blayne Campbell
 All rights reserved.
 
@@ -27,7 +27,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 The views and conclusions contained in the software and documentation are those
 of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
-'''
+"""
 __appname__ = "Sort-em"
 __license__ = "BSD"
 __author__ = "Blayne Campbell"
@@ -41,17 +41,20 @@ import shutil
 import sys
 import os
 
-'''Set Database Name'''
+
+# Set Database Name
 database = 'data.db'  # Useful for multiple database needs
 
-'''No not edit'''
+# Do not edit
 con = None
 sdir = None
 proc = None
 
 
 def setdir():
-    '''Setting Directory to Process'''
+    """
+    Setting Directory to Process
+    """
     print "Provide the ABSOLUTE PATH to process.."
     sdir = str(raw_input("Directory:"
                          "(" + os.getcwd() + '/files' + "):"))
@@ -68,8 +71,8 @@ def setdir():
 
 
 def admvdup():
-    yes = set(['yes', 'y', 'ye'])
-    no = set(['no', 'n', ''])
+    yes = {'yes', 'y', 'ye'}
+    no = {'no', 'n', ''}
     proc = None
     while proc is None:
         print ""
@@ -88,7 +91,9 @@ def admvdup():
 
 
 def chksum(fin):
-    '''Generate sha512 checksum for current file'''
+    """
+    Generate sha512 checksum for current file
+    """
     sha = hashlib.sha512()
     with open(fin, 'rb') as f:
         for chunk in iter(lambda: f.read(128 * sha.block_size), b''):
@@ -100,7 +105,6 @@ def index():
     count = 1
     con = None
     try:
-        '''Initialize database and create table for file records'''
         con = sqlite3.connect(database)
         cur = con.cursor()
         cur.execute("DROP TABLE IF EXISTS files")
@@ -109,7 +113,6 @@ def index():
                     "moved INT)")
         for path, subdirs, files in os.walk(sdir):
             for name in files:
-                '''Populate table with file records'''
                 n, e = os.path.splitext(name)
                 e = e.lstrip('.')
                 h = chksum(os.path.join(path, name))
@@ -133,7 +136,6 @@ def iddup():
     cur.execute("""SELECT * FROM files""")
     data = cur.fetchone()
     while data:
-        '''Mark master and duplicate files in database file'''
         (i, n, t, p, h, m, d, v) = data
         if d == 0 and m == 0:
             cur.execute("""UPDATE files SET master = 1
@@ -147,7 +149,9 @@ def iddup():
 
 
 def duplog():
-    '''Create Logfile'''
+    """
+    Create Logfile
+    """
     con = sqlite3.connect(database)
     cur = con.cursor()
     cur.execute("""SELECT * FROM files WHERE dupe = 1""")
@@ -158,8 +162,7 @@ def duplog():
         print "Duplicate Files Found (see duplicates.log):"
     f = open('duplicates.log', 'wb')
     for dupe in data:
-        '''Newline for UNIX systems \n OR Windows systems \r\n'''
-        f.write(dupe[3] + '/' + dupe[1] + '\n')
+        f.write(dupe[3] + '/' + dupe[1] + '\n')  # UNIX: \n || Windows: \r\n
     f.close()
 
 
@@ -170,7 +173,7 @@ def mvdup(db):
     cur.execute("""SELECT * FROM files WHERE dupe = 1  AND moved <> 1""")
     data = cur.fetchall()
     if not data:
-        print "No files to move OR the files have already been moved previously"
+        print "No files to move OR files have already been moved previously"
     else:
         print "Moving Duplicates.."
         for d in data:
@@ -187,7 +190,9 @@ def mvdup(db):
 
 
 def move(p):
-    '''Moving duplicates'''
+    """
+    Moving duplicates
+    """
     if p is 1:
         mvdup(database)
     else:

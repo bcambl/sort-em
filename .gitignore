@@ -1,6 +1,7 @@
 *.pyc
 *.log
 *.nja
+*.idea
 *.db
 *.swp
 notes
