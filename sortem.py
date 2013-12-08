@@ -107,10 +107,9 @@ def index():
     try:
         con = sqlite3.connect(database)
         cur = con.cursor()
-        cur.execute("DROP TABLE IF EXISTS files")
-        cur.execute("CREATE TABLE files(id INT, name TEXT,"
-                    "type INT, path TEXT, hash STR, master INT, dupe INT,"
-                    "moved INT)")
+        cur.execute("""DROP TABLE IF EXISTS files""")
+        cur.execute("""CREATE TABLE files(id INT, name TEXT, type INT,
+                    path TEXT, hash STR, master INT, dupe INT, moved INT)""")
         for path, subdirs, files in os.walk(sdir):
             for name in files:
                 n, e = os.path.splitext(name)
@@ -160,10 +159,43 @@ def duplog():
         print "No Duplicates found."
     else:
         print "Duplicate Files Found (see duplicates.log):"
-    f = open('duplicates.log', 'wb')
+    log = open('duplicates.log', 'wb')
     for dupe in data:
-        f.write(dupe[3] + '/' + dupe[1] + '\n')  # UNIX: \n || Windows: \r\n
-    f.close()
+        log.write(dupe[3] + '/' + dupe[1] + '\n')  # UNIX: \n || Windows: \r\n
+    log.close()
+
+
+def duplink():
+    """
+    Create html file containing links to duplicates
+    """
+    con = sqlite3.connect(database)
+    cur = con.cursor()
+    cur.execute("""SELECT * FROM files where master='1'""")
+    data = cur.fetchall()
+    link = open('duplicates.html', 'wb')
+    link.write('<html>'
+            '<head>'
+            '<meta charset="UTF-8">'
+            '<link href="style.css" rel="stylesheet">'
+            '<title>dupe-links</title>'
+            '<body>'
+            '<h1>Links to duplicates:</h1>')
+    for row in data:
+        cur.execute("""SELECT * FROM files where hash = ? and dupe = 1""", (row[4], ))
+        ddata = cur.fetchall()
+        if not ddata:
+            pass
+        else:
+            link.write('<div class="record"><ul>')
+            link.write('<span class="record_name">Duplicates for %s</span>' % row[1])
+            for r in ddata:
+                link.write('<li><a href="%s/%s">%s/%s</a></li>' % (str((r[3])), str(r[1]), str((r[3])), str(r[1])))
+            link.write('</ul></div>')
+    link.write('</body></html>')
+    logloc = os.getcwd()
+    print "View Duplicates: file://" + logloc + "/duplicates.html"
+    link.close()
 
 
 def mvdup(db):
@@ -183,8 +215,7 @@ def mvdup(db):
             if not os.path.exists(dest):
                 os.makedirs(dest)
             shutil.move(f, dest)
-            cur.execute("""UPDATE files SET moved = 1 WHERE
-                id = ?""", (i,))
+            cur.execute("""UPDATE files SET moved = 1 WHERE id = ?""", (i,))
             con.commit()
     con.close()
 
@@ -205,6 +236,7 @@ try:
         move(admvdup())
         iddup()
         duplog()
+        duplink()
 except IOError:
     print 'No database found. Will create database named: ', database
     sdir = setdir()
@@ -214,6 +246,7 @@ except IOError:
     index()
     iddup()
     duplog()
+    duplink()
     move(proc)
 
 

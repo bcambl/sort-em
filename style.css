@@ -1,0 +1,13 @@
+body {
+    color: #222;
+    background-color: #dedede;
+}
+
+div.record {
+    border:1px black solid;
+    margin: 5px 0 5px 0;
+}
+
+span.record_name {
+    font-weight: bold;
+}

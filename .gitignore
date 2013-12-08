@@ -5,6 +5,7 @@
 *.db
 *.swp
 notes
+duplicates.html
 setup.py
 test.py
 dbtest.py
